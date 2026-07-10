@@ -3,31 +3,31 @@
  * Core simulation and AI logic
  */
 
-// Sirkuit database
+// Circuit database
 const TRACKS = {
     monaco: {
         name: "Monaco (Monte Carlo)",
-        baseLapTime: 75.0, // detik
-        pitLoss: 19.5, // waktu hilang di pit lane (detik)
-        abrasiveness: 0.25, // degradasi ban sangat rendah
+        baseLapTime: 75.0, // seconds
+        pitLoss: 19.5, // time lost in pit lane (seconds)
+        abrasiveness: 0.25, // extremely low tyre wear
         totalLaps: 78,
-        description: "Sirkuit jalan raya sempit dengan degradasi ban terendah, sangat sulit menyalip."
+        description: "Narrow street circuit with the lowest tyre degradation, extremely difficult to overtake."
     },
     bahrain: {
         name: "Bahrain (Sakhir)",
         baseLapTime: 94.0,
         pitLoss: 22.5,
-        abrasiveness: 0.90, // degradasi sangat tinggi
+        abrasiveness: 0.90, // very high wear
         totalLaps: 57,
-        description: "Permukaan trek yang sangat kasar dan abrasif, degradasi termal tinggi."
+        description: "Very rough and abrasive track surface, high thermal degradation."
     },
     silverstone: {
         name: "Great Britain (Silverstone)",
         baseLapTime: 89.5,
         pitLoss: 20.0,
-        abrasiveness: 0.70, // degradasi sedang-tinggi
+        abrasiveness: 0.70, // medium-high wear
         totalLaps: 52,
-        description: "Trek cepat dengan banyak tikungan berkecepatan tinggi, memberikan beban lateral besar pada ban."
+        description: "Fast track with many high-speed corners, putting massive lateral loads on tyres."
     },
     monza: {
         name: "Italy (Monza)",
@@ -35,7 +35,7 @@ const TRACKS = {
         pitLoss: 25.0,
         abrasiveness: 0.40,
         totalLaps: 53,
-        description: "Kuil Kecepatan (Temple of Speed), beban ban rendah karena trek didominasi lintasan lurus."
+        description: "Temple of Speed, low tyre load due to long straights."
     },
     spa: {
         name: "Belgium (Spa-Francorchamps)",
@@ -43,7 +43,7 @@ const TRACKS = {
         pitLoss: 21.0,
         abrasiveness: 0.55,
         totalLaps: 44,
-        description: "Sirkuit terpanjang dalam kalender, cuaca mikro yang sangat tidak terduga."
+        description: "Longest circuit on the calendar, highly unpredictable microclimate."
     },
     singapore: {
         name: "Singapore (Marina Bay)",
@@ -51,24 +51,24 @@ const TRACKS = {
         pitLoss: 28.0,
         abrasiveness: 0.50,
         totalLaps: 62,
-        description: "Suhu udara lembap dan panas, pit stop paling memakan waktu karena batas kecepatan pit lane rendah."
+        description: "Hot and humid conditions, most time-consuming pit lane due to low speed limit."
     }
 };
 
-// Karakteristik Ban
+// Tyre Compound Properties
 const TYRES = {
     S: {
         name: "Soft",
-        color: "#e10600", // Merah F1
-        baseGrip: 1.04, // Paling cepat di trek kering
-        baseWearRate: 0.052, // Cepat aus
-        wearDegradation: 3.8, // Penalti detik maksimal saat aus
+        color: "#e10600", // F1 Red
+        baseGrip: 1.04, // Fastest on dry track
+        baseWearRate: 0.052, // Fast wear
+        wearDegradation: 3.8, // Maximum seconds penalty when fully worn
         minLaps: 3,
         maxLife: 25
     },
     M: {
         name: "Medium",
-        color: "#ffd129", // Kuning F1
+        color: "#ffd129", // F1 Yellow
         baseGrip: 1.00,
         baseWearRate: 0.029,
         wearDegradation: 2.8,
@@ -77,8 +77,8 @@ const TYRES = {
     },
     H: {
         name: "Hard",
-        color: "#ffffff", // Putih
-        baseGrip: 0.965, // Lebih lambat tapi awet
+        color: "#ffffff", // White
+        baseGrip: 0.965, // Slower but durable
         baseWearRate: 0.016,
         wearDegradation: 2.0,
         minLaps: 5,
@@ -86,8 +86,8 @@ const TYRES = {
     },
     I: {
         name: "Intermediate",
-        color: "#39b54a", // Hijau
-        baseGrip: 0.88, // Optimal di lintasan basah ringan
+        color: "#39b54a", // Green
+        baseGrip: 0.88, // Optimal on damp track
         baseWearRate: 0.024,
         wearDegradation: 3.2,
         minLaps: 3,
@@ -95,8 +95,8 @@ const TYRES = {
     },
     W: {
         name: "Wet",
-        color: "#00a2e8", // Biru
-        baseGrip: 0.82, // Optimal di lintasan sangat basah
+        color: "#00a2e8", // Blue
+        baseGrip: 0.82, // Optimal on fully flooded track
         baseWearRate: 0.018,
         wearDegradation: 3.5,
         minLaps: 3,
@@ -104,63 +104,79 @@ const TYRES = {
     }
 };
 
-// Gaya Mengemudi
+// Driver Styles
 const DRIVER_STYLES = {
-    conservative: { speedFactor: 1.003, wearFactor: 0.78, name: "Konservatif (Hemat Ban)" },
-    balanced: { speedFactor: 1.000, wearFactor: 1.00, name: "Seimbang" },
-    aggressive: { speedFactor: 0.997, wearFactor: 1.32, name: "Agresif (Push)" }
+    conservative: { speedFactor: 1.003, wearFactor: 0.78, name: "Conservative (Save Tyres)" },
+    balanced: { speedFactor: 1.000, wearFactor: 1.00, name: "Balanced" },
+    aggressive: { speedFactor: 0.997, wearFactor: 1.32, name: "Aggressive (Push)" }
 };
 
 /**
- * Menghitung waktu lap dan tingkat keausan ban berikutnya.
+ * Calculate lap time and tyre wear for the next lap.
  */
 function calculateLapTime(track, lap, tyreType, wear, wetness, driverStyle, totalLaps) {
     const trackInfo = TRACKS[track];
     const tyreInfo = TYRES[tyreType];
     const styleInfo = DRIVER_STYLES[driverStyle];
 
-    // 1. Pengaruh Bahan Bakar (Mobil semakin ringan -> semakin cepat)
+    // 1. Fuel Weight Effect (Car gets lighter -> faster)
     const fuelRemaining = (totalLaps - lap) / totalLaps;
-    const fuelPenalty = fuelRemaining * 2.8;
+    const fuelPenalty = fuelRemaining * 2.8; // Max 2.8s penalty at start of race
 
-    // 2. Grip Ban berdasarkan Kondisi Basah Trek (Wetness)
+    // 2. Tyre Grip based on Track Wetness
     let grip = tyreInfo.baseGrip;
     if (tyreType === 'S' || tyreType === 'M' || tyreType === 'H') {
+        // Slick tyres lose grip rapidly if water is present
         if (wetness > 0.1) {
             grip = grip - 2.8 * Math.pow(wetness - 0.1, 1.8);
         }
     } else if (tyreType === 'I') {
+        // Intermediate works best in wetness 0.15 - 0.65
         if (wetness < 0.15) {
+            // Too dry for inter
             grip = grip - 0.4 * (0.15 - wetness);
         } else if (wetness > 0.65) {
+            // Too wet
             grip = grip - 1.2 * (wetness - 0.65);
         } else {
+            // Optimal intermediate zone
             const diff = Math.abs(wetness - 0.4);
             grip = grip - 0.1 * diff;
         }
     } else if (tyreType === 'W') {
+        // Wet works best in wetness > 0.5
         if (wetness < 0.5) {
+            // Too dry for wet
             grip = grip - 0.8 * (0.5 - wetness);
         } else {
+            // Optimal wet zone
             const diff = Math.max(0, 0.8 - wetness);
             grip = grip - 0.15 * diff;
         }
     }
+    // Limit minimum grip to prevent negative/unrealistic lap times
     grip = Math.max(0.3, grip);
 
+    // Calculate base lap time adjusted for grip and driver style
     let lapTime = trackInfo.baseLapTime * (2.0 - grip) * styleInfo.speedFactor;
+
+    // Add fuel penalty
     lapTime += fuelPenalty;
 
-    // 3. Penalti Degradasi Keausan Ban
+    // 3. Tyre Wear Degradation Penalty
     let wearPenalty = tyreInfo.wearDegradation * Math.pow(wear, 2);
+    
+    // Cliff Effect (Sudden drop in performance if wear > 0.70)
     if (wear > 0.70) {
         wearPenalty += 6.0 * Math.pow(wear - 0.70, 1.5);
     }
+    
     lapTime += wearPenalty;
 
-    // 4. Hitung Keausan Ban Berikutnya (Next Wear)
+    // 4. Calculate Next Wear State
     let wearRateMultiplier = trackInfo.abrasiveness * styleInfo.wearFactor;
 
+    // Inters/Wets wear out extremely fast on dry track
     if (tyreType === 'I' && wetness < 0.15) {
         wearRateMultiplier *= 8.0 * (1.0 - wetness);
     } else if (tyreType === 'W' && wetness < 0.45) {
@@ -177,12 +193,13 @@ function calculateLapTime(track, lap, tyreType, wear, wetness, driverStyle, tota
 }
 
 /**
- * Menghasilkan array kondisi basah trek (wetness) untuk setiap lap berdasarkan prakiraan cuaca.
+ * Generate track wetness history array based on weather segments.
  */
 function generateTrackWetnessHistory(totalLaps, weatherSegments) {
     const wetnessHistory = new Array(totalLaps + 1).fill(0.0);
     const sortedSegments = [...weatherSegments].sort((a, b) => a.fromLap - b.fromLap);
 
+    // Set target wetness for each lap
     const targetWetness = new Array(totalLaps + 1).fill(0.0);
     for (let lap = 1; lap <= totalLaps; lap++) {
         const seg = sortedSegments.find(s => lap >= s.fromLap && lap <= s.toLap);
@@ -195,13 +212,16 @@ function generateTrackWetnessHistory(totalLaps, weatherSegments) {
         }
     }
 
+    // Simulate transition of track dampness (gradual puddle buildup / drying)
     let currentWetness = targetWetness[1];
     wetnessHistory[1] = currentWetness;
     for (let lap = 2; lap <= totalLaps; lap++) {
         const target = targetWetness[lap];
         if (currentWetness < target) {
+            // Rain starts, track gets wet quickly (+0.08 per lap)
             currentWetness = Math.min(target, currentWetness + 0.08);
         } else if (currentWetness > target) {
+            // Rain stops, track dries gradually (-0.04 per lap)
             currentWetness = Math.max(target, currentWetness - 0.04);
         }
         wetnessHistory[lap] = parseFloat(currentWetness.toFixed(3));
@@ -211,7 +231,7 @@ function generateTrackWetnessHistory(totalLaps, weatherSegments) {
 }
 
 /**
- * Mensimulasikan jalannya balapan dari startLap hingga totalLaps dengan strategi pit stop tertentu.
+ * Simulate race from startLap to totalLaps using a designated strategy.
  */
 function simulateStrategy(track, totalLaps, startLap, initialTyre, initialWear, driverStyle, wetnessHistory, pitStops) {
     let currentTyre = initialTyre;
@@ -234,11 +254,12 @@ function simulateStrategy(track, totalLaps, startLap, initialTyre, initialWear, 
         let isPitLap = false;
         let pitTimeLoss = 0;
 
+        // Check if a pit stop is scheduled on this lap
         if (pitMap[lap] && pitMap[lap] !== currentTyre) {
             isPitLap = true;
             currentTyre = pitMap[lap];
-            currentWear = 0.0;
-            pitTimeLoss = TRACKS[track].pitLoss + 2.5;
+            currentWear = 0.0; // Fresh tyres
+            pitTimeLoss = TRACKS[track].pitLoss + 2.5; // pit loss + 2.5s tyre swap
             currentStintLaps = 0;
             usedCompounds.add(currentTyre);
             totalStops++;
@@ -257,10 +278,11 @@ function simulateStrategy(track, totalLaps, startLap, initialTyre, initialWear, 
         currentWear = result.nextWear;
         currentStintLaps++;
 
+        // Safety limit: if tyres hit >95% wear, the strategy is failed
         if (currentWear >= 0.95) {
             return {
                 isValid: false,
-                validationError: `Ban ${TYRES[currentTyre].name} terlalu aus (mencapai batas bahaya >95%) pada Lap ${lap}.`,
+                validationError: `Tyre ${TYRES[currentTyre].name} is too worn (exceeded safety limit >95%) on Lap ${lap}.`,
                 totalTime: Infinity,
                 lapTimes,
                 wearProgression,
@@ -269,6 +291,9 @@ function simulateStrategy(track, totalLaps, startLap, initialTyre, initialWear, 
         }
     }
 
+    // F1 Sporting Regulations Check:
+    // If the race is dry (no Intermediate or Wet tyres used), drivers MUST run at least 2 different slick compounds
+    // and perform at least 1 pit stop.
     let dryRace = true;
     let usedSlickCount = 0;
     const slickTypes = new Set(['S', 'M', 'H']);
@@ -284,7 +309,7 @@ function simulateStrategy(track, totalLaps, startLap, initialTyre, initialWear, 
         if (totalStops === 0) {
             return {
                 isValid: false,
-                validationError: "Aturan F1: Dalam balapan kering, pembalap wajib melakukan minimal 1 pit stop untuk mengganti tipe ban.",
+                validationError: "F1 Regulation: In a dry race, drivers must make at least 1 pit stop to change tyre compounds.",
                 totalTime: totalTime,
                 lapTimes,
                 wearProgression,
@@ -294,7 +319,7 @@ function simulateStrategy(track, totalLaps, startLap, initialTyre, initialWear, 
         if (usedSlickCount < 2) {
             return {
                 isValid: false,
-                validationError: "Aturan F1: Dalam balapan kering, pembalap wajib menggunakan minimal 2 tipe ban Slick yang berbeda (misal Soft dan Medium).",
+                validationError: "F1 Regulation: In a dry race, drivers must use at least 2 different Slick compounds (e.g. Soft and Medium).",
                 totalTime: totalTime,
                 lapTimes,
                 wearProgression,
@@ -315,21 +340,30 @@ function simulateStrategy(track, totalLaps, startLap, initialTyre, initialWear, 
 
 /**
  * AI Strategy Optimizer
+ * Employs a recursive backtracking search engine with pruning to find the absolute fastest strategies.
  */
 function optimizeStrategy(track, totalLaps, startLap, initialTyre, initialWear, driverStyle, weatherSegments) {
     const wetnessHistory = generateTrackWetnessHistory(totalLaps, weatherSegments);
+    
+    // Check if rain exists in weather report
     const hasRain = weatherSegments.some(s => s.type === 'light_rain' || s.type === 'heavy_rain');
     const allowedTyres = hasRain ? ['S', 'M', 'H', 'I', 'W'] : ['S', 'M', 'H'];
 
     let bestStrategy = null;
     let bestTime = Infinity;
     let evaluatedCount = 0;
+
+    // Normal dry race: max 2 stops. Wet/changeable weather: allow up to 3 stops.
     const maxStops = hasRain ? 3 : 2;
 
+    /**
+     * Backtracking function for stint exploration
+     */
     function search(stintStartLap, currentTyre, currentWear, accumulatedTime, history, compoundsUsed) {
         if (stintStartLap > totalLaps) {
             evaluatedCount++;
             
+            // F1 Regulation validation
             let dryRace = true;
             let slickCount = 0;
             compoundsUsed.forEach(c => {
@@ -354,6 +388,7 @@ function optimizeStrategy(track, totalLaps, startLap, initialTyre, initialWear, 
             return;
         }
 
+        // Branch-and-bound pruning
         if (accumulatedTime >= bestTime) {
             return;
         }
@@ -366,6 +401,7 @@ function optimizeStrategy(track, totalLaps, startLap, initialTyre, initialWear, 
         let stintTime = 0;
         let stintData = [];
 
+        // Simulate forward lap-by-lap to find potential pit laps
         for (let lap = stintStartLap; lap <= totalLaps; lap++) {
             const wetness = wetnessHistory[lap];
             const result = calculateLapTime(track, lap, currentTyre, tempWear, wetness, driverStyle, totalLaps);
@@ -380,6 +416,7 @@ function optimizeStrategy(track, totalLaps, startLap, initialTyre, initialWear, 
                 wear: tempWear
             });
 
+            // Limit tyre wear to 88% for racing safety limits
             if (tempWear > 0.88) {
                 break;
             }
@@ -387,6 +424,7 @@ function optimizeStrategy(track, totalLaps, startLap, initialTyre, initialWear, 
 
         const minLapsBeforePit = Math.min(tyreInfo.minLaps, lapsSimulated);
 
+        // Option A: Carry on this stint until end of race (No more pits)
         if (stintStartLap + lapsSimulated - 1 === totalLaps) {
             const lastLapData = stintData[stintData.length - 1];
             if (lastLapData.wear < 0.90) {
@@ -401,6 +439,7 @@ function optimizeStrategy(track, totalLaps, startLap, initialTyre, initialWear, 
             }
         }
 
+        // Option B: Schedule a pit stop on a valid lap in this stint
         if (history.length < maxStops) {
             for (let i = minLapsBeforePit - 1; i < stintData.length; i++) {
                 const step = stintData[i];
@@ -411,6 +450,7 @@ function optimizeStrategy(track, totalLaps, startLap, initialTyre, initialWear, 
                 const timeAtPit = step.accumTime + trackInfo.pitLoss + 2.5;
                 const nextLapWetness = wetnessHistory[pitLap + 1] || 0;
                 
+                // Try compound choices for next stint
                 for (const nextTyre of allowedTyres) {
                     if (nextTyre === currentTyre && !hasRain) continue;
                     if ((nextTyre === 'I' || nextTyre === 'W') && nextLapWetness < 0.15) continue;
@@ -435,16 +475,18 @@ function optimizeStrategy(track, totalLaps, startLap, initialTyre, initialWear, 
         }
     }
 
+    // Initialize search
     const initialCompounds = new Set([initialTyre]);
     search(startLap, initialTyre, initialWear, 0.0, [], initialCompounds);
 
     if (!bestStrategy) {
         return {
-            error: "Tidak dapat menemukan strategi optimal yang aman dalam batas toleransi ban.",
+            error: "Unable to find a safe strategy within tyre wear constraints.",
             evaluatedCount
         };
     }
 
+    // Re-simulate optimal strategy to acquire lap data
     const simulationResult = simulateStrategy(
         track,
         totalLaps,
@@ -456,6 +498,7 @@ function optimizeStrategy(track, totalLaps, startLap, initialTyre, initialWear, 
         bestStrategy.pitStops
     );
 
+    // Get alternatives for dashboard comparisons
     const alternatives = findAlternativeStrategies(
         track,
         totalLaps,
@@ -484,12 +527,13 @@ function optimizeStrategy(track, totalLaps, startLap, initialTyre, initialWear, 
 }
 
 /**
- * Menghasilkan beberapa strategi alternatif yang layak untuk dibandingkan
+ * Generate comparison alternatives
  */
 function findAlternativeStrategies(track, totalLaps, startLap, initialTyre, initialWear, driverStyle, wetnessHistory, bestStrategy, allowedTyres) {
     const alternatives = [];
     const bestStopsCount = bestStrategy.pitStops.length;
     
+    // Alternative 1: Add 1 stop
     if (bestStopsCount < 3) {
         const targetStops = bestStopsCount + 1;
         const interval = Math.floor((totalLaps - startLap) / (targetStops + 1));
@@ -513,7 +557,7 @@ function findAlternativeStrategies(track, totalLaps, startLap, initialTyre, init
         const sim = simulateStrategy(track, totalLaps, startLap, initialTyre, initialWear, driverStyle, wetnessHistory, pitStops);
         if (sim.isValid && Math.abs(sim.totalTime - bestStrategy.totalTime) < 60) {
             alternatives.push({
-                name: `${targetStops}-Stop (Alternatif Cepat)`,
+                name: `${targetStops}-Stop (Fast Alternative)`,
                 pitStops,
                 totalTime: sim.totalTime,
                 lapTimes: sim.lapTimes,
@@ -524,6 +568,7 @@ function findAlternativeStrategies(track, totalLaps, startLap, initialTyre, init
         }
     }
 
+    // Alternative 2: Subtract 1 stop (if best strategy > 1 stop)
     if (bestStopsCount > 1) {
         const targetStops = bestStopsCount - 1;
         const interval = Math.floor((totalLaps - startLap) / (targetStops + 1));
@@ -543,7 +588,7 @@ function findAlternativeStrategies(track, totalLaps, startLap, initialTyre, init
         const sim = simulateStrategy(track, totalLaps, startLap, initialTyre, initialWear, driverStyle, wetnessHistory, pitStops);
         if (sim.isValid && Math.abs(sim.totalTime - bestStrategy.totalTime) < 90) {
             alternatives.push({
-                name: `${targetStops}-Stop (Alternatif Hemat)`,
+                name: `${targetStops}-Stop (Saver Alternative)`,
                 pitStops,
                 totalTime: sim.totalTime,
                 lapTimes: sim.lapTimes,
@@ -554,6 +599,7 @@ function findAlternativeStrategies(track, totalLaps, startLap, initialTyre, init
         }
     }
 
+    // If no alternatives found, make a default simple 1-stop
     if (alternatives.length === 0) {
         const halfLap = Math.floor((totalLaps + startLap) / 2);
         const nextTyre = initialTyre === 'M' ? 'H' : 'M';
@@ -561,7 +607,7 @@ function findAlternativeStrategies(track, totalLaps, startLap, initialTyre, init
         const sim = simulateStrategy(track, totalLaps, startLap, initialTyre, initialWear, driverStyle, wetnessHistory, pitStops);
         if (sim.isValid) {
             alternatives.push({
-                name: "1-Stop (Strategi Standar)",
+                name: "1-Stop (Standard Strategy)",
                 pitStops,
                 totalTime: sim.totalTime,
                 lapTimes: sim.lapTimes,
@@ -575,6 +621,7 @@ function findAlternativeStrategies(track, totalLaps, startLap, initialTyre, init
     return alternatives.slice(0, 2);
 }
 
+// Export for node checking or browser namespace
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { TRACKS, TYRES, DRIVER_STYLES, calculateLapTime, simulateStrategy, optimizeStrategy, generateTrackWetnessHistory };
 } else {

@@ -55,7 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let activeChartType = 'laptime'; // 'laptime' | 'wear' | 'wetness'
     let myChart = null;
 
-    // 1. Inisialisasi Tampilan Sirkuit awal
+    // 1. Initial Track Art setup
     function updateTrackArt() {
         const selectedTrack = trackSelect.value;
         const trackInfo = F1Simulation.TRACKS[selectedTrack];
@@ -74,7 +74,7 @@ document.addEventListener("DOMContentLoaded", () => {
             startLapInput.value = trackInfo.totalLaps;
         }
 
-        // Jalankan pembersihan segmen hujan yang melebihi lap sirkuit
+        // Clean out weather segments that exceed track bounds
         rainSegments = rainSegments.filter(seg => seg.fromLap <= trackInfo.totalLaps);
         rainSegments.forEach(seg => {
             if (seg.toLap > trackInfo.totalLaps) seg.toLap = trackInfo.totalLaps;
@@ -85,7 +85,7 @@ document.addEventListener("DOMContentLoaded", () => {
     trackSelect.addEventListener("change", updateTrackArt);
     updateTrackArt(); // Initial call
 
-    // Update wear text slider
+    // Update wear slider text
     initialWearRange.addEventListener("input", (e) => {
         wearValueText.innerText = `${e.target.value}%`;
     });
@@ -95,11 +95,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const currentTrack = trackSelect.value;
         const trackInfo = F1Simulation.TRACKS[currentTrack];
         
-        // Set default values based on current input
         weatherStartLap.max = trackInfo.totalLaps;
         weatherEndLap.max = trackInfo.totalLaps;
-        
-        // Open modal
         weatherModal.style.display = "flex";
     });
 
@@ -107,7 +104,6 @@ document.addEventListener("DOMContentLoaded", () => {
         weatherModal.style.display = "none";
     });
 
-    // Close modal if user clicks outside content
     window.addEventListener("click", (e) => {
         if (e.target === weatherModal) {
             weatherModal.style.display = "none";
@@ -122,31 +118,31 @@ document.addEventListener("DOMContentLoaded", () => {
         const currentTrack = trackSelect.value;
         const trackInfo = F1Simulation.TRACKS[currentTrack];
 
-        // Validasi input
+        // Validate range inputs
         if (isNaN(fromLap) || isNaN(toLap) || fromLap < 1 || toLap < 1) {
-            alert("Nomor lap harus berupa angka positif.");
+            alert("Lap numbers must be positive integers.");
             return;
         }
         if (fromLap > trackInfo.totalLaps || toLap > trackInfo.totalLaps) {
-            alert(`Sirkuit ${trackInfo.name} hanya memiliki ${trackInfo.totalLaps} lap.`);
+            alert(`Circuit ${trackInfo.name} only has ${trackInfo.totalLaps} Laps.`);
             return;
         }
         if (fromLap > toLap) {
-            alert("Lap Mulai tidak boleh lebih besar dari Lap Selesai.");
+            alert("Start Lap cannot be greater than End Lap.");
             return;
         }
 
-        // Periksa apakah ada overlap dengan segmen hujan yang sudah ada
+        // Check overlaps with other rain events
         const isOverlap = rainSegments.some(seg => {
             return (fromLap <= seg.toLap && toLap >= seg.fromLap);
         });
 
         if (isOverlap) {
-            alert("Lap hujan yang baru tumpang tindih (overlap) dengan jadwal hujan yang sudah ada.");
+            alert("The weather segment overlaps with an already scheduled rain event.");
             return;
         }
 
-        // Tambahkan segmen baru
+        // Push new segment
         rainSegments.push({
             id: Date.now(),
             fromLap,
@@ -154,20 +150,20 @@ document.addEventListener("DOMContentLoaded", () => {
             type
         });
 
-        // Urutkan segmen
+        // Sort rain segments
         rainSegments.sort((a, b) => a.fromLap - b.fromLap);
 
         // Reset & Close
         weatherModal.style.display = "none";
         renderWeatherList();
-        writeConsoleLine(`Prakiraan Cuaca Diperbarui: Hujan (${type === 'light_rain' ? 'Ringan' : 'Lebat'}) pada Lap ${fromLap}-${toLap}`, "warn");
+        writeConsoleLine(`Weather Forecast Updated: Rain (${type === 'light_rain' ? 'Light' : 'Heavy'}) on Laps ${fromLap}-${toLap}`, "warn");
     });
 
-    // Hapus weather segment
+    // Remove weather segment
     window.deleteWeatherSegment = function(id) {
         rainSegments = rainSegments.filter(seg => seg.id !== id);
         renderWeatherList();
-        writeConsoleLine("Segmen cuaca dihapus dari jadwal.", "info");
+        writeConsoleLine("Weather segment removed from forecast.", "info");
     };
 
     // Render weather list in DOM
@@ -177,14 +173,14 @@ document.addEventListener("DOMContentLoaded", () => {
         if (rainSegments.length === 0) {
             weatherListContainer.innerHTML = `
                 <div class="weather-card" style="color: var(--text-muted); justify-content: center; border-style: dashed;">
-                    Trek kering sepanjang balapan (Dry Race)
+                    Dry conditions expected throughout (Dry Race)
                 </div>
             `;
             return;
         }
 
         rainSegments.forEach(seg => {
-            const typeLabel = seg.type === 'light_rain' ? 'Hujan Ringan (Inter)' : 'Hujan Lebat (Wet)';
+            const typeLabel = seg.type === 'light_rain' ? 'Light Rain (Inter)' : 'Heavy Rain (Wet)';
             const typeClass = seg.type;
             
             const card = document.createElement("div");
@@ -192,7 +188,7 @@ document.addEventListener("DOMContentLoaded", () => {
             card.innerHTML = `
                 <div class="weather-info">
                     <span class="weather-type-badge badge-${typeClass}">${seg.type === 'light_rain' ? 'Inter' : 'Wet'}</span>
-                    <span class="weather-laps">Lap ${seg.fromLap} - ${seg.toLap}</span>
+                    <span class="weather-laps">Laps ${seg.fromLap} - ${seg.toLap}</span>
                 </div>
                 <button type="button" class="btn-delete" onclick="deleteWeatherSegment(${seg.id})">&times;</button>
             `;
@@ -201,14 +197,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     renderWeatherList(); // Call initially
 
-    // 3. Compile weather segments (menggabungkan area dry + rain)
+    // 3. Compile weather segments
     function compileAllWeatherSegments(totalLaps) {
         const segments = [];
         let currentLap = 1;
 
-        // rainSegments sudah diurutkan berdasarkan fromLap
         rainSegments.forEach(rain => {
-            // Jika ada celah sebelum hujan, tandai sebagai kering (dry)
             if (rain.fromLap > currentLap) {
                 segments.push({
                     fromLap: currentLap,
@@ -216,7 +210,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     type: 'dry'
                 });
             }
-            // Tambahkan segmen hujan
             segments.push({
                 fromLap: rain.fromLap,
                 toLap: rain.toLap,
@@ -225,7 +218,6 @@ document.addEventListener("DOMContentLoaded", () => {
             currentLap = rain.toLap + 1;
         });
 
-        // Jika masih ada lap sisa sampai akhir balapan, tandai kering
         if (currentLap <= totalLaps) {
             segments.push({
                 fromLap: currentLap,
@@ -250,21 +242,21 @@ document.addEventListener("DOMContentLoaded", () => {
         consoleLines.scrollTop = consoleLines.scrollHeight;
     }
 
-    // Format waktu balapan
+    // Format total time
     function formatTotalTime(seconds) {
-        if (seconds === Infinity || isNaN(seconds)) return "DNF / Tidak Valid";
+        if (seconds === Infinity || isNaN(seconds)) return "DNF / Invalid";
         const h = Math.floor(seconds / 3600);
         const m = Math.floor((seconds % 3600) / 60);
         const s = (seconds % 60).toFixed(3);
         
         let output = "";
-        if (h > 0) output += `${h}j `;
+        if (h > 0) output += `${h}h `;
         if (m > 0 || h > 0) output += `${m}m `;
-        output += `${s}d`;
+        output += `${s}s`;
         return output;
     }
 
-    // Format waktu lap
+    // Format lap times
     function formatLapTime(seconds) {
         if (isNaN(seconds) || seconds === Infinity) return "--:--.---";
         const m = Math.floor(seconds / 60);
@@ -273,7 +265,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return m > 0 ? `${m}:${paddedS}` : `${s}s`;
     }
 
-    // 4. Run AI Optimization & Simulasikan logs telemetry
+    // 4. Run AI Optimization with telemetry animation
     btnCalculate.addEventListener("click", () => {
         const track = trackSelect.value;
         const driverStyle = driverStyleSelect.value;
@@ -284,9 +276,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const trackInfo = F1Simulation.TRACKS[track];
         const driverInfo = F1Simulation.DRIVER_STYLES[driverStyle];
 
-        // Validasi starting lap
+        // Start lap validation
         if (startLap < 1 || startLap > trackInfo.totalLaps) {
-            alert(`Lap saat ini harus berada di rentang 1 s/d ${trackInfo.totalLaps}.`);
+            alert(`Current lap must be within range 1 to ${trackInfo.totalLaps}.`);
             return;
         }
 
@@ -295,16 +287,14 @@ document.addEventListener("DOMContentLoaded", () => {
         visualizationPanel.style.display = "none";
         btnCalculate.disabled = true;
 
-        // Dapatkan data cuaca penuh
         const compiledWeather = compileAllWeatherSegments(trackInfo.totalLaps);
         const hasRain = rainSegments.length > 0;
 
-        // Rangkaian log animasi simulasi AI
         const logSteps = [
-            { text: `Menginisialisasi telemetri sirkuit: ${trackInfo.name} (${trackInfo.totalLaps} Lap)...`, type: "info", delay: 0 },
-            { text: `Membaca profil driver: ${driverInfo.name}. Memuat faktor keausan ban: ${driverInfo.wearFactor}x.`, type: "info", delay: 200 },
-            { text: `Mendeteksi prakiraan cuaca... ${hasRain ? 'Ditemukan anomali hujan dinamis pada trek!' : 'Trek diperkirakan tetap kering sepenuhnya.'}`, type: hasRain ? "warn" : "info", delay: 450 },
-            { text: `Menjalankan algoritma Optimasi AI (Dynamic Programming & Pruning)...`, type: "info", delay: 700 }
+            { text: `Initializing track telemetry: ${trackInfo.name} (${trackInfo.totalLaps} Laps)...`, type: "info", delay: 0 },
+            { text: `Loading driver profile: ${driverInfo.name}. Tyre wear multiplier: ${driverInfo.wearFactor}x.`, type: "info", delay: 200 },
+            { text: `Detecting weather forecast... ${hasRain ? 'Dynamic rain detected on track!' : 'Track is expected to remain dry.'}`, type: hasRain ? "warn" : "info", delay: 450 },
+            { text: `Running AI Optimization Engine (Dynamic Programming & Pruning)...`, type: "info", delay: 700 }
         ];
 
         logSteps.forEach(step => {
@@ -313,7 +303,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }, step.delay);
         });
 
-        // Run calculation setelah log awal selesai
+        // Run calculation after logs
         setTimeout(() => {
             const t0 = performance.now();
             optimizationResult = F1Simulation.optimizeStrategy(
@@ -329,33 +319,29 @@ document.addEventListener("DOMContentLoaded", () => {
             const calculationTimeMs = (t1 - t0).toFixed(1);
 
             if (optimizationResult.error) {
-                writeConsoleLine(`KESALAHAN OPTIMASI: ${optimizationResult.error}`, "highlight");
+                writeConsoleLine(`OPTIMIZATION ERROR: ${optimizationResult.error}`, "highlight");
                 btnCalculate.disabled = false;
                 return;
             }
 
             const best = optimizationResult.bestStrategy;
             
-            writeConsoleLine(`Mengevaluasi ${optimizationResult.evaluatedCount} opsi strategi dalam ${calculationTimeMs}ms.`, "info");
-            writeConsoleLine("Memverifikasi regulasi ban F1 (Dry compound diversity & pit requirement check)...", "info");
+            writeConsoleLine(`Evaluating ${optimizationResult.evaluatedCount} viable pit-stop combinations in ${calculationTimeMs}ms.`, "info");
+            writeConsoleLine("Verifying F1 tyre regulations (Dry compound diversity & pit stop requirement)...", "info");
             
             setTimeout(() => {
-                writeConsoleLine("REGULASI TERVERIFIKASI. Menghitung profil lap time dan degradasi...", "success");
+                writeConsoleLine("REGULATIONS VERIFIED. Simulating lap-by-lap profiles and degradation...", "success");
                 
                 setTimeout(() => {
-                    const pitLaps = best.pitStops.map(p => `Lap ${p.lap} (${p.tyre})`).join(", ") || "Tanpa Pit (1-Stint)";
-                    writeConsoleLine(`STRATEGI OPTIMAL DITEMUKAN: ${best.totalStops} Pit Stop [${pitLaps}]`, "success");
-                    writeConsoleLine(`Estimasi Waktu Balapan: ${formatTotalTime(best.totalTime)}`, "highlight");
+                    const pitLaps = best.pitStops.map(p => `Lap ${p.lap} (${p.tyre})`).join(", ") || "No Pit (1-Stint)";
+                    writeConsoleLine(`OPTIMAL STRATEGY FOUND: ${best.totalStops} Pit Stop(s) [${pitLaps}]`, "success");
+                    writeConsoleLine(`Estimated Race Time: ${formatTotalTime(best.totalTime)}`, "highlight");
                     
-                    // Tampilkan UI Hasil
                     resultsPanel.style.display = "block";
                     visualizationPanel.style.display = "block";
                     btnCalculate.disabled = false;
                     
-                    // Set default selected strategy to Best (-1)
                     selectedStrategyIndex = -1;
-                    
-                    // Render UI Data
                     renderResults();
                     
                 }, 400);
@@ -364,29 +350,27 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 1100);
     });
 
-    // 5. Render Hasil ke DOM
+    // 5. Render results to DOM
     function renderResults() {
         const track = trackSelect.value;
         const trackInfo = F1Simulation.TRACKS[track];
         const startLap = parseInt(startLapInput.value);
         
-        // Ambil strategi aktif (Best atau salah satu Alternatif)
         let activeStrategy = null;
-        let strategyName = "Best Strategy (AI)";
+        let strategyName = "AI Recommendation (Fastest)";
         
         if (selectedStrategyIndex === -1) {
             activeStrategy = optimizationResult.bestStrategy;
-            strategyName = "Rekomendasi AI (Tercepat)";
+            strategyName = "AI Recommendation (Fastest)";
         } else {
             activeStrategy = optimizationResult.alternatives[selectedStrategyIndex];
             strategyName = activeStrategy.name;
         }
 
-        // Tampilkan metrik utama
+        // Display main stats
         metricTotalTime.innerText = formatTotalTime(activeStrategy.totalTime);
         metricStops.innerText = `${activeStrategy.totalStops} Stop${activeStrategy.totalStops !== 1 ? 's' : ''}`;
         
-        // Hitung rata-rata lap time
         const sumLaps = activeStrategy.lapTimes.reduce((a, b) => a + b, 0);
         const avgTime = sumLaps / activeStrategy.lapTimes.length;
         metricAvgLap.innerText = formatLapTime(avgTime);
@@ -398,7 +382,6 @@ document.addEventListener("DOMContentLoaded", () => {
         // Render Stint Timeline
         stintTimeline.innerHTML = "";
         
-        // Tentukan titik-titik pembagian stint
         const pitLaps = activeStrategy.pitStops.map(p => p.lap);
         const stintTyres = [initialTyreSelect.value, ...activeStrategy.pitStops.map(p => p.tyre)];
         
@@ -418,7 +401,7 @@ document.addEventListener("DOMContentLoaded", () => {
             bar.className = `stint-bar tyre-${tyreType}`;
             bar.style.width = `${widthPercent}%`;
             bar.innerText = `${tyreType} (${stintLength}L)`;
-            bar.title = `Stint ${i+1}: Ban ${F1Simulation.TYRES[tyreType].name} (${stintLength} Lap, L${lastLap+1} - L${nextPitLap})`;
+            bar.title = `Stint ${i+1}: ${F1Simulation.TYRES[tyreType].name} Tyre (${stintLength} Laps, L${lastLap+1} - L${nextPitLap})`;
             
             stintTimeline.appendChild(bar);
             lastLap = nextPitLap;
@@ -427,22 +410,21 @@ document.addEventListener("DOMContentLoaded", () => {
         // Render Alternatives Grid
         alternativesGrid.innerHTML = "";
         
-        // Buat tombol/kartu untuk Best Strategy sendiri terlebih dahulu
+        // AI Recommendation card
         const bestCard = document.createElement("div");
         bestCard.className = `alt-card ${selectedStrategyIndex === -1 ? 'selected' : ''}`;
         bestCard.addEventListener("click", () => {
             selectedStrategyIndex = -1;
             renderResults();
-            writeConsoleLine("Menampilkan data: Rekomendasi AI (Tercepat)", "info");
+            writeConsoleLine("Displaying data: AI Recommendation (Fastest)", "info");
         });
 
-        // Sequence of tyres
         const bestSequence = [initialTyreSelect.value, ...optimizationResult.bestStrategy.pitStops.map(p => p.tyre)];
         let bestTyreBadgesHtml = bestSequence.map(t => `<span class="alt-tyre-badge tyre-${t}">${t}</span>`).join("");
         
         bestCard.innerHTML = `
             <div class="alt-header">
-                <span class="alt-name">Rekomendasi AI (Tercepat)</span>
+                <span class="alt-name">AI Recommendation (Fastest)</span>
                 <span class="alt-time-diff fastest">BASE</span>
             </div>
             <div style="font-family: var(--font-mono); font-size: 1.1rem; font-weight: bold; margin: 5px 0;">
@@ -454,18 +436,18 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
         alternativesGrid.appendChild(bestCard);
 
-        // Alternatif lainnya
+        // Alternatives cards
         optimizationResult.alternatives.forEach((alt, idx) => {
             const card = document.createElement("div");
             card.className = `alt-card ${selectedStrategyIndex === idx ? 'selected' : ''}`;
             card.addEventListener("click", () => {
                 selectedStrategyIndex = idx;
                 renderResults();
-                writeConsoleLine(`Menampilkan data: ${alt.name}`, "info");
+                writeConsoleLine(`Displaying data: ${alt.name}`, "info");
             });
 
             const diff = alt.totalTime - optimizationResult.bestStrategy.totalTime;
-            const diffText = diff <= 0 ? "Fastest" : `+${diff.toFixed(2)}d`;
+            const diffText = diff <= 0 ? "Fastest" : `+${diff.toFixed(2)}s`;
             const diffClass = diff <= 0 ? "fastest" : "";
 
             const seq = [initialTyreSelect.value, ...alt.pitStops.map(p => p.tyre)];
@@ -486,14 +468,11 @@ document.addEventListener("DOMContentLoaded", () => {
             alternativesGrid.appendChild(card);
         });
 
-        // Render detailed breakdown table
         renderLapTable(activeStrategy);
-
-        // Render Chart
         renderChart();
     }
 
-    // Render Table Body
+    // Render detailed lap table
     function renderLapTable(strategy) {
         lapsTableBody.innerHTML = "";
         
@@ -511,24 +490,22 @@ document.addEventListener("DOMContentLoaded", () => {
             const wearVal = strategy.wearProgression[i];
             const wetnessVal = (optimizationResult.wetnessHistory[i] * 100).toFixed(0);
 
-            // Cek pit note
             let note = "-";
             const pitMapIndex = pitLaps.indexOf(lapNum);
             
             if (pitMapIndex !== -1) {
                 currentTyre = pitTyres[pitMapIndex];
-                note = `🔧 PIT STOP: Pasang ban ${F1Simulation.TYRES[currentTyre].name} baru.`;
+                note = `🔧 PIT STOP: Fitted new ${F1Simulation.TYRES[currentTyre].name} tyres.`;
             } else if (i === 0) {
-                note = "🚦 Awal Simulasi Stint";
+                note = "🚦 Start of Simulation Stint";
             }
             
-            // Catatan cuaca jika wetness mendadak naik
             const curWetness = optimizationResult.wetnessHistory[i];
             const prevWetness = i > 0 ? optimizationResult.wetnessHistory[i-1] : curWetness;
             if (curWetness > 0.15 && prevWetness <= 0.15) {
-                note = "🌧️ Lintasan mulai Basah / Hujan";
+                note = "🌧️ Track surface damp / Rain starts";
             } else if (curWetness <= 0.15 && prevWetness > 0.15) {
-                note = "☀️ Lintasan mulai Mengering";
+                note = "☀️ Track surface drying / Rain ends";
             }
 
             const tr = document.createElement("tr");
@@ -566,19 +543,15 @@ document.addEventListener("DOMContentLoaded", () => {
         const startLap = parseInt(startLapInput.value);
         const totalSimLaps = trackInfo.totalLaps - startLap + 1;
         
-        // Buat labels untuk sumbu X (Lap)
         const labels = Array.from({ length: totalSimLaps }, (_, i) => `L${startLap + i}`);
 
-        // Bersihkan chart lama jika ada
         if (myChart) {
             myChart.destroy();
         }
 
-        // Tentukan data berdasarkan tipe chart aktif
         let datasets = [];
 
         if (activeChartType === 'laptime') {
-            // Gambar lap times dari Best Strategy + Alternatives
             datasets.push({
                 label: "AI Best Strategy",
                 data: optimizationResult.bestStrategy.lapTimes,
@@ -587,7 +560,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 borderWidth: 3,
                 tension: 0.1,
                 pointRadius: (context) => {
-                    // Beri titik tebal pada lap pit stop
                     const index = context.dataIndex;
                     const lapNum = startLap + index;
                     const isPit = optimizationResult.bestStrategy.pitStops.some(p => p.lap === lapNum);
@@ -619,15 +591,14 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
         } else if (activeChartType === 'wear') {
-            // Tampilkan degradasi keausan ban dari strategi terpilih
             let targetStrategy = selectedStrategyIndex === -1 
                 ? optimizationResult.bestStrategy 
                 : optimizationResult.alternatives[selectedStrategyIndex];
 
             datasets.push({
-                label: `Degradasi Ban (% Wear) - ${selectedStrategyIndex === -1 ? 'Rekomendasi AI' : 'Alternatif'}`,
+                label: `Tyre Wear (% Wear) - ${selectedStrategyIndex === -1 ? 'AI Recommendation' : 'Alternative'}`,
                 data: targetStrategy.wearProgression,
-                borderColor: "rgba(255, 209, 41, 1)", // Kuning medium
+                borderColor: "rgba(255, 209, 41, 1)",
                 backgroundColor: "rgba(255, 209, 41, 0.1)",
                 fill: true,
                 borderWidth: 3,
@@ -636,11 +607,10 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
         } else if (activeChartType === 'wetness') {
-            // Tampilkan kebasahan trek (wetness)
             datasets.push({
-                label: "Tingkat Kebasahan Trek (Wetness %)",
+                label: "Track Wetness (%)",
                 data: optimizationResult.wetnessHistory.map(w => (w * 100).toFixed(0)),
-                borderColor: "rgba(0, 162, 232, 1)", // Biru wet
+                borderColor: "rgba(0, 162, 232, 1)",
                 backgroundColor: "rgba(0, 162, 232, 0.1)",
                 fill: true,
                 borderWidth: 3,
@@ -649,7 +619,6 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
 
-        // Options Chart kustom bertema F1
         const chartOptions = {
             responsive: true,
             maintainAspectRatio: false,
@@ -708,7 +677,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     },
                     title: {
                         display: true,
-                        text: activeChartType === 'laptime' ? "Lap Time (Detik)" : (activeChartType === 'wear' ? "Keausan Ban (%)" : "Kebasahan Trek (%)"),
+                        text: activeChartType === 'laptime' ? "Lap Time (Seconds)" : (activeChartType === 'wear' ? "Tyre Wear (%)" : "Track Wetness (%)"),
                         color: "var(--text-secondary)",
                         font: { family: "Outfit", size: 12, weight: "bold" }
                     }
