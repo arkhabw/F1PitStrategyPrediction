@@ -518,7 +518,8 @@ function findAlternativeStrategies(track, totalLaps, startLap, initialTyre, init
                 totalTime: sim.totalTime,
                 lapTimes: sim.lapTimes,
                 wearProgression: sim.wearProgression,
-                tyreHistory: sim.tyreHistory
+                tyreHistory: sim.tyreHistory,
+                totalStops: sim.totalStops
             });
         }
     }
@@ -547,7 +548,8 @@ function findAlternativeStrategies(track, totalLaps, startLap, initialTyre, init
                 totalTime: sim.totalTime,
                 lapTimes: sim.lapTimes,
                 wearProgression: sim.wearProgression,
-                tyreHistory: sim.tyreHistory
+                tyreHistory: sim.tyreHistory,
+                totalStops: sim.totalStops
             });
         }
     }
@@ -564,7 +566,8 @@ function findAlternativeStrategies(track, totalLaps, startLap, initialTyre, init
                 totalTime: sim.totalTime,
                 lapTimes: sim.lapTimes,
                 wearProgression: sim.wearProgression,
-                tyreHistory: sim.tyreHistory
+                tyreHistory: sim.tyreHistory,
+                totalStops: sim.totalStops
             });
         }
     }
