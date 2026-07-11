@@ -1,6 +1,6 @@
-# F1 Pit Strategy AI Optimizer 🏎️🔮
+# RacePace AI - F1 Pit Strategy Optimizer 🏎️🔮
 
-An interactive, premium web-based F1 Race Simulation & Pit Strategy Optimizer. Designed with motorsport paddock telemetry aesthetics, this application leverages an AI backtracking search algorithm to compute the mathematically optimal pit stop windows and compound choices for a given race scenario.
+RacePace AI is an interactive, premium web-based F1 Race Simulation & Pit Strategy Optimizer. Designed with motorsport paddock telemetry aesthetics, this application leverages an AI backtracking search algorithm to compute the mathematically optimal pit stop windows and compound choices for a given race scenario.
 
 ## Live Demo 🌐
 You can host this static site easily on **GitHub Pages**. Once deployed, add your live link here:

@@ -3,20 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>F1 Pit Strategy AI Optimizer</title>
+    <title>RacePace AI - F1 Pit Strategy Optimizer</title>
     
-    <!-- SEO and Social Share Card Meta Tags -->
-    <meta name="description" content="AI-Powered F1 Race Simulation & Pit Strategy Optimizer. Predict optimal pit windows, tyre degradation, and weather shifts in real-time.">
-    <meta property="og:title" content="F1 Pit Strategy AI Optimizer">
-    <meta property="og:description" content="Simulate F1 races, optimize tyre choices, and navigate weather changes with an AI backtracking engine.">
+    <!-- SEO & OG Metadata -->
+    <meta name="description" content="RacePace AI - F1 Race Simulation & Pit Strategy Optimizer. Predict optimal pit windows, tyre degradation, and weather shifts in real-time.">
+    <meta property="og:title" content="RacePace AI - F1 Pit Strategy Optimizer">
+    <meta property="og:description" content="Predict the best pit stop strategy for Formula 1 races using dynamic AI models.">
     <meta property="og:type" content="website">
-    <meta property="og:image" content="https://raw.githubusercontent.com/arkhabw/F1PitStrategyPrediction/main/screenshot_preview.png">
+    <meta property="og:url" content="https://arkhabw.github.io/F1PitStrategyPrediction/">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="F1 Pit Strategy AI Optimizer">
-    <meta name="twitter:description" content="Simulate F1 races and optimize pit windows dynamically.">
+    <meta name="twitter:title" content="RacePace AI - F1 Pit Strategy Optimizer">
+    <meta name="twitter:description" content="Predict the best pit stop strategy for Formula 1 races using dynamic AI models.">
     
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
-    <!-- Chart.js CDN -->
+    <script src="simulation.js"></script>
+    <script src="ui.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -24,8 +26,8 @@
         <div class="logo-container">
             <span class="f1-badge">F1</span>
             <div>
-                <h1>Pit Strategy Optimizer</h1>
-                <div class="subtitle">AI-Powered Race Simulation & Pit Window Prediction</div>
+                <h1>RacePace <span class="accent-red">AI</span></h1>
+                <div class="subtitle">F1 Pit Strategy & Race Simulation Optimizer</div>
             </div>
         </div>
         <div class="live-time" id="liveTelemetryBadge">TELEMETRY: CONNECTED</div>
