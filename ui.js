@@ -742,7 +742,7 @@ document.addEventListener("DOMContentLoaded", () => {
             plugins: {
                 legend: {
                     labels: {
-                        color: "var(--text-secondary)",
+                        color: "#8e94a5",
                         font: {
                             family: "Outfit",
                             size: 11
@@ -753,7 +753,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     backgroundColor: "#12141c",
                     titleColor: "#fff",
                     bodyColor: "#00f0ff",
-                    borderColor: "var(--border-color)",
+                    borderColor: "rgba(255, 255, 255, 0.07)",
                     borderWidth: 1,
                     titleFont: { family: "Outfit", weight: "bold" },
                     bodyFont: { family: "JetBrains Mono" },
@@ -779,7 +779,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         color: "rgba(255,255,255,0.03)"
                     },
                     ticks: {
-                        color: "var(--text-secondary)",
+                        color: "#8e94a5",
                         font: { family: "Outfit" },
                         maxTicksLimit: 15
                     }
@@ -789,13 +789,13 @@ document.addEventListener("DOMContentLoaded", () => {
                         color: "rgba(255,255,255,0.03)"
                     },
                     ticks: {
-                        color: "var(--text-secondary)",
+                        color: "#8e94a5",
                         font: { family: "Outfit" }
                     },
                     title: {
                         display: true,
                         text: activeChartType === 'laptime' ? "Lap Time (Seconds)" : (activeChartType === 'wear' ? "Tyre Wear (%)" : "Track Wetness (%)"),
-                        color: "var(--text-secondary)",
+                        color: "#8e94a5",
                         font: { family: "Outfit", size: 12, weight: "bold" }
                     }
                 }

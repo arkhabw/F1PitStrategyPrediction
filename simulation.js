@@ -255,7 +255,7 @@ function simulateStrategy(track, totalLaps, startLap, initialTyre, initialWear, 
         let pitTimeLoss = 0;
 
         // Check if a pit stop is scheduled on this lap
-        if (pitMap[lap] && pitMap[lap] !== currentTyre) {
+        if (pitMap[lap]) {
             isPitLap = true;
             currentTyre = pitMap[lap];
             currentWear = 0.0; // Fresh tyres
