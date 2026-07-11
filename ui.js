@@ -38,6 +38,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const weatherStartLap = document.getElementById("weatherStartLap");
     const weatherEndLap = document.getElementById("weatherEndLap");
 
+    // Premium UI Custom Selectors Elements
+    const driverStyleSegmented = document.getElementById("driverStyleSegmented");
+    const driverStyleSlider = document.getElementById("driverStyleSlider");
+    const driverStyleBtns = driverStyleSegmented.querySelectorAll(".segment-btn");
+    
+    const initialTyreSegmented = document.getElementById("initialTyreSegmented");
+    const tyreBtns = initialTyreSegmented.querySelectorAll(".tyre-btn");
+
+    const btnExportPDF = document.getElementById("btnExportPDF");
+    const compareTimelinesSection = document.getElementById("compareTimelinesSection");
+    const compareListContainer = document.getElementById("compareListContainer");
+
     // Track SVG path definitions
     const TRACK_SVGS = {
         monaco: "M 25 50 C 15 30, 40 10, 65 15 C 80 20, 90 40, 80 55 C 70 70, 60 65, 50 80 C 40 90, 25 75, 20 65 C 15 55, 35 65, 25 50 Z",
@@ -55,7 +67,44 @@ document.addEventListener("DOMContentLoaded", () => {
     let activeChartType = 'laptime'; // 'laptime' | 'wear' | 'wetness'
     let myChart = null;
 
-    // 1. Initial Track Art setup
+    // --- Premium Custom Selectors Logics ---
+    // 1. Driver Style Segmented Control
+    function alignStyleSlider() {
+        const activeBtn = driverStyleSegmented.querySelector(".segment-btn.active");
+        if (activeBtn) {
+            driverStyleSlider.style.left = activeBtn.offsetLeft + "px";
+            driverStyleSlider.style.width = activeBtn.offsetWidth + "px";
+        }
+    }
+
+    driverStyleBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+            driverStyleBtns.forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            driverStyleSelect.value = btn.getAttribute("data-value");
+            alignStyleSlider();
+        });
+    });
+
+    // Run alignment initial and on resize
+    setTimeout(alignStyleSlider, 100);
+    window.addEventListener("resize", alignStyleSlider);
+
+    // 2. Tyre Button Selector Control
+    tyreBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+            tyreBtns.forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            initialTyreSelect.value = btn.getAttribute("data-value");
+        });
+    });
+
+    // 3. Export PDF Action
+    btnExportPDF.addEventListener("click", () => {
+        window.print();
+    });
+
+    // 4. Initial Track Art setup
     function updateTrackArt() {
         const selectedTrack = trackSelect.value;
         const trackInfo = F1Simulation.TRACKS[selectedTrack];
@@ -90,7 +139,7 @@ document.addEventListener("DOMContentLoaded", () => {
         wearValueText.innerText = `${e.target.value}%`;
     });
 
-    // 2. Weather Modal Actions
+    // Weather Modal Actions
     btnAddWeather.addEventListener("click", () => {
         const currentTrack = trackSelect.value;
         const trackInfo = F1Simulation.TRACKS[currentTrack];
@@ -180,7 +229,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         rainSegments.forEach(seg => {
-            const typeLabel = seg.type === 'light_rain' ? 'Light Rain (Inter)' : 'Heavy Rain (Wet)';
             const typeClass = seg.type;
             
             const card = document.createElement("div");
@@ -197,7 +245,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     renderWeatherList(); // Call initially
 
-    // 3. Compile weather segments
+    // Compile weather segments
     function compileAllWeatherSegments(totalLaps) {
         const segments = [];
         let currentLap = 1;
@@ -265,7 +313,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return m > 0 ? `${m}:${paddedS}` : `${s}s`;
     }
 
-    // 4. Run AI Optimization with telemetry animation
+    // Run AI Optimization with telemetry animation
     btnCalculate.addEventListener("click", () => {
         const track = trackSelect.value;
         const driverStyle = driverStyleSelect.value;
@@ -350,11 +398,43 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 1100);
     });
 
+    // Helper to generate visual stint bar elements
+    function createStintTimelineHTML(pitStops, startLap, totalLaps, initialTyre) {
+        const timeline = document.createElement("div");
+        timeline.className = "compare-timeline-mini";
+
+        const pitLaps = pitStops.map(p => p.lap);
+        const stintTyres = [initialTyre, ...pitStops.map(p => p.tyre)];
+        const totalSimLaps = totalLaps - startLap + 1;
+        let lastLap = startLap - 1;
+
+        for (let i = 0; i < stintTyres.length; i++) {
+            const nextPitLap = pitLaps[i] || totalLaps;
+            const stintLength = nextPitLap - lastLap;
+            if (stintLength <= 0) continue;
+
+            const widthPercent = (stintLength / totalSimLaps) * 100;
+            const tyreType = stintTyres[i];
+
+            const bar = document.createElement("div");
+            bar.className = `compare-bar tyre-${tyreType}`;
+            bar.style.width = `${widthPercent}%`;
+            bar.innerText = stintLength > 3 ? `${tyreType}` : "";
+            bar.title = `${F1Simulation.TYRES[tyreType].name} (${stintLength} Laps)`;
+
+            timeline.appendChild(bar);
+            lastLap = nextPitLap;
+        }
+
+        return timeline;
+    }
+
     // 5. Render results to DOM
     function renderResults() {
         const track = trackSelect.value;
         const trackInfo = F1Simulation.TRACKS[track];
         const startLap = parseInt(startLapInput.value);
+        const initialTyre = initialTyreSelect.value;
         
         let activeStrategy = null;
         let strategyName = "AI Recommendation (Fastest)";
@@ -383,7 +463,7 @@ document.addEventListener("DOMContentLoaded", () => {
         stintTimeline.innerHTML = "";
         
         const pitLaps = activeStrategy.pitStops.map(p => p.lap);
-        const stintTyres = [initialTyreSelect.value, ...activeStrategy.pitStops.map(p => p.tyre)];
+        const stintTyres = [initialTyre, ...activeStrategy.pitStops.map(p => p.tyre)];
         
         const totalSimLaps = trackInfo.totalLaps - startLap + 1;
         let lastLap = startLap - 1;
@@ -407,7 +487,29 @@ document.addEventListener("DOMContentLoaded", () => {
             lastLap = nextPitLap;
         }
 
-        // Render Alternatives Grid
+        // --- Render Side-by-Side Visual Compare ---
+        compareListContainer.innerHTML = "";
+        compareTimelinesSection.style.display = "block";
+
+        // Row 1: AI Best Strategy
+        const rowBest = document.createElement("div");
+        rowBest.className = "compare-row";
+        rowBest.innerHTML = `<div class="compare-name">AI Rec (Fastest) <span>${formatTotalTime(optimizationResult.bestStrategy.totalTime)}</span></div>`;
+        const bestTimelineMini = createStintTimelineHTML(optimizationResult.bestStrategy.pitStops, startLap, trackInfo.totalLaps, initialTyre);
+        rowBest.appendChild(bestTimelineMini);
+        compareListContainer.appendChild(rowBest);
+
+        // Rows for Alternatives
+        optimizationResult.alternatives.forEach((alt) => {
+            const rowAlt = document.createElement("div");
+            rowAlt.className = "compare-row";
+            rowAlt.innerHTML = `<div class="compare-name">${alt.name} <span>${formatTotalTime(alt.totalTime)}</span></div>`;
+            const altTimelineMini = createStintTimelineHTML(alt.pitStops, startLap, trackInfo.totalLaps, initialTyre);
+            rowAlt.appendChild(altTimelineMini);
+            compareListContainer.appendChild(rowAlt);
+        });
+
+        // Render Alternatives Grid Cards
         alternativesGrid.innerHTML = "";
         
         // AI Recommendation card
@@ -419,7 +521,7 @@ document.addEventListener("DOMContentLoaded", () => {
             writeConsoleLine("Displaying data: AI Recommendation (Fastest)", "info");
         });
 
-        const bestSequence = [initialTyreSelect.value, ...optimizationResult.bestStrategy.pitStops.map(p => p.tyre)];
+        const bestSequence = [initialTyre, ...optimizationResult.bestStrategy.pitStops.map(p => p.tyre)];
         let bestTyreBadgesHtml = bestSequence.map(t => `<span class="alt-tyre-badge tyre-${t}">${t}</span>`).join("");
         
         bestCard.innerHTML = `
@@ -450,7 +552,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const diffText = diff <= 0 ? "Fastest" : `+${diff.toFixed(2)}s`;
             const diffClass = diff <= 0 ? "fastest" : "";
 
-            const seq = [initialTyreSelect.value, ...alt.pitStops.map(p => p.tyre)];
+            const seq = [initialTyre, ...alt.pitStops.map(p => p.tyre)];
             const badgesHtml = seq.map(t => `<span class="alt-tyre-badge tyre-${t}">${t}</span>`).join("");
 
             card.innerHTML = `
@@ -535,9 +637,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // 6. Chart.js Drawing
+    // 6. Chart.js Drawing with premium gradients & glows
     function renderChart() {
-        const ctx = document.getElementById("strategyChart").getContext("2d");
+        const ctxElement = document.getElementById("strategyChart");
+        const ctx = ctxElement.getContext("2d");
         const track = trackSelect.value;
         const trackInfo = F1Simulation.TRACKS[track];
         const startLap = parseInt(startLapInput.value);
@@ -551,19 +654,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
         let datasets = [];
 
+        // Creating glowing gradients for line fills
+        const redGradient = ctx.createLinearGradient(0, 0, 0, 350);
+        redGradient.addColorStop(0, "rgba(225, 6, 0, 0.28)");
+        redGradient.addColorStop(1, "rgba(225, 6, 0, 0.0)");
+
+        const yellowGradient = ctx.createLinearGradient(0, 0, 0, 350);
+        yellowGradient.addColorStop(0, "rgba(255, 209, 41, 0.22)");
+        yellowGradient.addColorStop(1, "rgba(255, 209, 41, 0.0)");
+
+        const blueGradient = ctx.createLinearGradient(0, 0, 0, 350);
+        blueGradient.addColorStop(0, "rgba(0, 162, 232, 0.25)");
+        blueGradient.addColorStop(1, "rgba(0, 162, 232, 0.0)");
+
         if (activeChartType === 'laptime') {
             datasets.push({
                 label: "AI Best Strategy",
                 data: optimizationResult.bestStrategy.lapTimes,
                 borderColor: "rgba(225, 6, 0, 1)",
-                backgroundColor: "rgba(225, 6, 0, 0.05)",
+                backgroundColor: redGradient,
+                fill: true,
                 borderWidth: 3,
-                tension: 0.1,
+                tension: 0.15,
                 pointRadius: (context) => {
                     const index = context.dataIndex;
                     const lapNum = startLap + index;
                     const isPit = optimizationResult.bestStrategy.pitStops.some(p => p.lap === lapNum);
-                    return isPit ? 6 : 1;
+                    return isPit ? 7 : 1;
                 },
                 pointBackgroundColor: "rgba(225, 6, 0, 1)"
             });
@@ -578,8 +695,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     data: alt.lapTimes,
                     borderColor: colors[idx] || "rgba(255, 255, 255, 0.5)",
                     borderWidth: 2,
-                    tension: 0.1,
-                    borderDash: [5, 5],
+                    tension: 0.15,
+                    borderDash: [4, 4],
                     pointRadius: (context) => {
                         const index = context.dataIndex;
                         const lapNum = startLap + index;
@@ -599,7 +716,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 label: `Tyre Wear (% Wear) - ${selectedStrategyIndex === -1 ? 'AI Recommendation' : 'Alternative'}`,
                 data: targetStrategy.wearProgression,
                 borderColor: "rgba(255, 209, 41, 1)",
-                backgroundColor: "rgba(255, 209, 41, 0.1)",
+                backgroundColor: yellowGradient,
                 fill: true,
                 borderWidth: 3,
                 tension: 0.1,
@@ -611,7 +728,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 label: "Track Wetness (%)",
                 data: optimizationResult.wetnessHistory.map(w => (w * 100).toFixed(0)),
                 borderColor: "rgba(0, 162, 232, 1)",
-                backgroundColor: "rgba(0, 162, 232, 0.1)",
+                backgroundColor: blueGradient,
                 fill: true,
                 borderWidth: 3,
                 tension: 0.2,

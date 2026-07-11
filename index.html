@@ -4,6 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>F1 Pit Strategy AI Optimizer</title>
+    
+    <!-- SEO and Social Share Card Meta Tags -->
+    <meta name="description" content="AI-Powered F1 Race Simulation & Pit Strategy Optimizer. Predict optimal pit windows, tyre degradation, and weather shifts in real-time.">
+    <meta property="og:title" content="F1 Pit Strategy AI Optimizer">
+    <meta property="og:description" content="Simulate F1 races, optimize tyre choices, and navigate weather changes with an AI backtracking engine.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://raw.githubusercontent.com/arkhabw/F1PitStrategyPrediction/main/screenshot_preview.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="F1 Pit Strategy AI Optimizer">
+    <meta name="twitter:description" content="Simulate F1 races and optimize pit windows dynamically.">
+    
     <link rel="stylesheet" href="styles.css">
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -22,7 +33,7 @@
 
     <main class="dashboard-grid">
         <!-- LEFT COLUMN: INPUT PARAMETERS -->
-        <section class="panel">
+        <section class="panel" id="raceSetupPanel">
             <h2 class="panel-title">Race Setup</h2>
             
             <!-- Dynamic Track Art -->
@@ -46,13 +57,16 @@
                     </select>
                 </div>
 
+                <!-- Custom Paddock Segmented Control for Driver Style -->
                 <div class="form-group">
-                    <label for="driverStyleSelect">Driver Style</label>
-                    <select id="driverStyleSelect">
-                        <option value="conservative">Conservative (Save Tyres)</option>
-                        <option value="balanced" selected>Balanced</option>
-                        <option value="aggressive">Aggressive (Push/Max Speed)</option>
-                    </select>
+                    <label>Driver Style</label>
+                    <div class="segmented-control" id="driverStyleSegmented">
+                        <div class="segment-slider" id="driverStyleSlider"></div>
+                        <button type="button" class="segment-btn" data-value="conservative">Save Tyres</button>
+                        <button type="button" class="segment-btn active" data-value="balanced">Balanced</button>
+                        <button type="button" class="segment-btn" data-value="aggressive">Push</button>
+                    </div>
+                    <input type="hidden" id="driverStyleSelect" value="balanced">
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
@@ -60,15 +74,18 @@
                         <label for="startLapInput">Current Lap</label>
                         <input type="number" id="startLapInput" class="form-control" value="1" min="1">
                     </div>
+                    
+                    <!-- Custom Tyre Emblem Selector -->
                     <div class="form-group">
-                        <label for="initialTyreSelect">Current Tyre</label>
-                        <select id="initialTyreSelect">
-                            <option value="S">Soft (S)</option>
-                            <option value="M" selected>Medium (M)</option>
-                            <option value="H">Hard (H)</option>
-                            <option value="I">Intermediate (I)</option>
-                            <option value="W">Wet (W)</option>
-                        </select>
+                        <label>Current Tyre</label>
+                        <div class="tyre-selector" id="initialTyreSegmented">
+                            <button type="button" class="tyre-btn tyre-btn-S" data-value="S" title="Soft">S</button>
+                            <button type="button" class="tyre-btn tyre-btn-M active" data-value="M" title="Medium">M</button>
+                            <button type="button" class="tyre-btn tyre-btn-H" data-value="H" title="Hard">H</button>
+                            <button type="button" class="tyre-btn tyre-btn-I" data-value="I" title="Intermediate">I</button>
+                            <button type="button" class="tyre-btn tyre-btn-W" data-value="W" title="Wet">W</button>
+                        </div>
+                        <input type="hidden" id="initialTyreSelect" value="M">
                     </div>
                 </div>
 
@@ -98,7 +115,7 @@
         <!-- RIGHT COLUMN: AI LOGS & RESULTS -->
         <section class="results-container">
             <!-- AI logs panel -->
-            <div class="ai-console">
+            <div class="ai-console" id="aiConsolePanel">
                 <div class="console-lines" id="consoleLines">
                     <div class="console-line info">System initialized. Awaiting user input parameters...</div>
                 </div>
@@ -106,7 +123,10 @@
 
             <!-- Main Recommended Strategy Results -->
             <div class="panel" id="resultsPanel" style="display: none;">
-                <h2 class="panel-title">AI Recommended Strategy</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 class="panel-title" style="margin-bottom: 0;">AI Recommended Strategy</h2>
+                    <button type="button" class="btn-sm" id="btnExportPDF">📥 Export PDF</button>
+                </div>
                 
                 <div class="metrics-row">
                     <div class="metric-card">
@@ -125,7 +145,7 @@
 
                 <!-- Visual Timeline -->
                 <div class="stint-timeline-container" style="margin-top: 20px;">
-                    <div style="font-weight: bold; font-size: 0.9rem; color: var(--text-secondary);">Stint Sequence Timeline:</div>
+                    <div style="font-weight: bold; font-size: 0.9rem; color: var(--text-secondary);" id="timelineTitle">Stint Sequence Timeline:</div>
                     <div class="stint-timeline" id="stintTimeline">
                         <!-- Injected stints by JS -->
                     </div>
@@ -139,6 +159,14 @@
                         <div class="legend-item"><span class="legend-dot H"></span> Hard</div>
                         <div class="legend-item"><span class="legend-dot I"></span> Intermediate</div>
                         <div class="legend-item"><span class="legend-dot W"></span> Wet</div>
+                    </div>
+                </div>
+
+                <!-- Visual Strategy Comparison (Side-by-Side Mode) -->
+                <div id="compareTimelinesSection" style="margin-top: 20px; border-top: 1px dashed var(--border-color); padding-top: 20px; display: none;">
+                    <div style="font-weight: bold; font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 12px;">Visual Strategy Comparison (Side-by-Side):</div>
+                    <div id="compareListContainer" style="display: flex; flex-direction: column; gap: 14px;">
+                        <!-- Mini stint bars injected here -->
                     </div>
                 </div>
 

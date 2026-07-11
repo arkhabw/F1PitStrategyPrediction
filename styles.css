@@ -34,11 +34,14 @@
 body {
     background-color: var(--bg-color);
     background-image: 
-        radial-gradient(at 0% 0%, rgba(225, 6, 0, 0.08) 0px, transparent 50%),
-        radial-gradient(at 100% 100%, rgba(0, 240, 255, 0.05) 0px, transparent 50%),
-        linear-gradient(rgba(255, 255, 255, 0.002) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.002) 1px, transparent 1px);
-    background-size: 100% 100%, 100% 100%, 30px 30px, 30px 30px;
+        radial-gradient(at 0% 0%, rgba(225, 6, 0, 0.12) 0px, transparent 55%),
+        radial-gradient(at 100% 100%, rgba(0, 240, 255, 0.08) 0px, transparent 55%),
+        /* Micro Carbon Mesh Texture */
+        linear-gradient(45deg, rgba(255,255,255,0.003) 25%, transparent 25%), 
+        linear-gradient(-45deg, rgba(255,255,255,0.003) 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.003) 75%), 
+        linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.003) 75%);
+    background-size: 100% 100%, 100% 100%, 8px 8px, 8px 8px, 8px 8px, 8px 8px;
     color: var(--text-primary);
     font-family: var(--font-outfit);
     min-height: 100vh;
@@ -235,7 +238,98 @@ input[type="range"]::-webkit-slider-thumb:hover {
     color: var(--accent-blue);
 }
 
-/* Weather segment builder */
+/* Custom Paddock Segmented Control (Pills Button Selector) */
+.segmented-control {
+    display: flex;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 3px;
+    position: relative;
+    overflow: hidden;
+    height: 42px;
+}
+
+.segment-slider {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    left: 3px;
+    width: calc(33.333% - 4px);
+    background: linear-gradient(135deg, var(--accent-red), #ff3c26);
+    border-radius: 6px;
+    transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s;
+    box-shadow: 0 2px 10px rgba(225, 6, 0, 0.3);
+    z-index: 1;
+}
+
+.segment-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-family: var(--font-outfit);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+    transition: color 0.2s;
+    outline: none;
+}
+
+.segment-btn.active {
+    color: #fff;
+}
+
+/* Custom Tyre Emblem Selectors */
+.tyre-selector {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    height: 42px;
+}
+
+.tyre-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: var(--font-outfit);
+    font-weight: 900;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    outline: none;
+}
+
+.tyre-btn:hover {
+    transform: scale(1.15);
+}
+
+.tyre-btn.active {
+    transform: scale(1.2);
+    box-shadow: 0 0 12px currentColor;
+}
+
+.tyre-btn-S { color: var(--color-soft); border-color: var(--color-soft); }
+.tyre-btn-M { color: var(--color-medium); border-color: var(--color-medium); }
+.tyre-btn-H { color: var(--color-hard); border-color: var(--color-hard); }
+.tyre-btn-I { color: var(--color-inter); border-color: var(--color-inter); }
+.tyre-btn-W { color: var(--color-wet); border-color: var(--color-wet); }
+
+.tyre-btn-S.active { background: var(--color-soft); color: #fff; }
+.tyre-btn-M.active { background: var(--color-medium); color: #000; }
+.tyre-btn-H.active { background: var(--color-hard); color: #000; }
+.tyre-btn-I.active { background: var(--color-inter); color: #fff; }
+.tyre-btn-W.active { background: var(--color-wet); color: #fff; }
+
+/* Weather builder section */
 .weather-builder {
     margin-top: 25px;
     border-top: 1px dashed var(--border-color);
@@ -459,7 +553,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
     justify-content: center;
     color: #000;
     font-weight: 800;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     transition: width 0.5s ease;
     text-shadow: 0px 0px 3px rgba(255, 255, 255, 0.6);
 }
@@ -506,6 +600,54 @@ input[type="range"]::-webkit-slider-thumb:hover {
 .legend-dot.H { background-color: var(--color-hard); border: 1px solid #777; }
 .legend-dot.I { background-color: var(--color-inter); }
 .legend-dot.W { background-color: var(--color-wet); }
+
+/* Side-by-side Visual Compare Mode */
+.compare-row {
+    display: grid;
+    grid-template-columns: 190px 1fr;
+    align-items: center;
+    gap: 15px;
+}
+
+.compare-name {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.compare-name span {
+    font-family: var(--font-mono);
+    color: var(--accent-blue);
+    font-weight: 500;
+    margin-left: 5px;
+}
+
+.compare-timeline-mini {
+    height: 20px;
+    border-radius: 10px;
+    display: flex;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #12141c;
+}
+
+.compare-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: #000;
+}
+
+.compare-bar.tyre-S { background: var(--color-soft); color: #fff; }
+.compare-bar.tyre-M { background: var(--color-medium); }
+.compare-bar.tyre-H { background: var(--color-hard); }
+.compare-bar.tyre-I { background: var(--color-inter); color: #fff; }
+.compare-bar.tyre-W { background: var(--color-wet); color: #fff; }
 
 /* Alternatives Grid */
 .alternatives-container {
@@ -749,4 +891,77 @@ input[type="range"]::-webkit-slider-thumb:hover {
     stroke: var(--accent-red);
     stroke-width: 3px;
     fill: none;
+}
+
+/* PDF Print Media Styles */
+@media print {
+    body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        padding: 0 !important;
+        background-image: none !important;
+    }
+
+    header, #raceSetupPanel, #aiConsolePanel, .alternatives-container, #btnToggleTable, .btn-chart-toggle, #btnExportPDF {
+        display: none !important;
+    }
+
+    .dashboard-grid {
+        display: block !important;
+    }
+
+    .panel {
+        background: #ffffff !important;
+        border: none !important;
+        box-shadow: none !important;
+        color: #000000 !important;
+        padding: 0 !important;
+        margin-bottom: 30px !important;
+    }
+
+    .panel-title {
+        border-left: 3px solid #000 !important;
+        color: #000000 !important;
+    }
+
+    .metric-card {
+        border: 1px solid #ddd !important;
+        background: #f9f9f9 !important;
+    }
+
+    .metric-value {
+        color: #000 !important;
+    }
+
+    .stint-timeline {
+        border: 1px solid #777 !important;
+    }
+
+    .legend-item, .timeline-labels {
+        color: #333 !important;
+    }
+
+    .chart-container {
+        border: 1px solid #ddd !important;
+        height: 300px !important;
+        page-break-inside: avoid;
+    }
+
+    .laps-breakdown {
+        max-height: none !important;
+        overflow: visible !important;
+        display: block !important;
+        border: 1px solid #ddd !important;
+    }
+
+    .laps-table th {
+        background: #eee !important;
+        color: #000 !important;
+        border-bottom: 1px solid #000 !important;
+    }
+
+    .laps-table td {
+        border-bottom: 1px solid #eee !important;
+        color: #000 !important;
+    }
 }
