@@ -965,3 +965,112 @@ input[type="range"]::-webkit-slider-thumb:hover {
         color: #000 !important;
     }
 }
+
+/* Mobile & Tablet Responsive Enhancements */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        padding-bottom: 12px;
+        margin-bottom: 18px;
+    }
+
+    .live-time {
+        align-self: stretch;
+        text-align: center;
+    }
+
+    h1 {
+        font-size: 1.5rem;
+    }
+
+    .subtitle {
+        font-size: 0.8rem;
+    }
+
+    .panel {
+        padding: 18px;
+    }
+
+    .metrics-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .chart-container {
+        height: 280px;
+    }
+
+    .compare-row {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+
+    .compare-name {
+        margin-bottom: 2px;
+    }
+
+    .stint-timeline {
+        height: 30px;
+    }
+
+    .stint-bar {
+        font-size: 0.75rem;
+    }
+
+    .tyre-selector {
+        gap: 6px;
+    }
+
+    .tyre-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 0.75rem;
+    }
+
+    .segmented-control {
+        height: 38px;
+    }
+
+    .segment-btn {
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .panel-title {
+        font-size: 1.1rem;
+        margin-bottom: 15px;
+    }
+
+    .form-group {
+        margin-bottom: 14px;
+    }
+
+    .weather-card {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+
+    .weather-type-badge {
+        font-size: 0.7rem;
+    }
+
+    .console-lines {
+        height: 100px;
+        font-size: 0.75rem;
+    }
+
+    .laps-table {
+        font-size: 0.75rem;
+    }
+
+    .laps-table th, .laps-table td {
+        padding: 6px;
+    }
+}
