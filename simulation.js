@@ -163,18 +163,19 @@ function calculateLapTime(track, lap, tyreType, wear, wetness, driverStyle, tota
     // Add fuel penalty
     lapTime += fuelPenalty;
 
-    // 3. Tyre Wear Degradation Penalty
-    let wearPenalty = tyreInfo.wearDegradation * Math.pow(wear, 2);
+    // 3. Tyre Wear Degradation Penalty (Steeper curve + critical cliff drop)
+    let wearPenalty = tyreInfo.wearDegradation * Math.pow(wear, 1.8);
     
-    // Cliff Effect (Sudden drop in performance if wear > 0.70)
-    if (wear > 0.70) {
-        wearPenalty += 6.0 * Math.pow(wear - 0.70, 1.5);
+    // Cliff Effect (Sudden, severe drop in performance beyond 60% wear)
+    if (wear > 0.60) {
+        wearPenalty += 22.0 * Math.pow(wear - 0.60, 2);
     }
     
     lapTime += wearPenalty;
 
     // 4. Calculate Next Wear State
-    let wearRateMultiplier = trackInfo.abrasiveness * styleInfo.wearFactor;
+    // Adjust track scaling to ensure minimum wear rate even on low-abrasion tracks like Monaco
+    let wearRateMultiplier = (0.45 + 0.55 * trackInfo.abrasiveness) * styleInfo.wearFactor;
 
     // Inters/Wets wear out extremely fast on dry track
     if (tyreType === 'I' && wetness < 0.15) {
@@ -278,11 +279,24 @@ function simulateStrategy(track, totalLaps, startLap, initialTyre, initialWear, 
         currentWear = result.nextWear;
         currentStintLaps++;
 
-        // Safety limit: if tyres hit >95% wear, the strategy is failed
-        if (currentWear >= 0.95) {
+        // Safety limit: if tyres hit >= 85% wear, the strategy is failed
+        if (currentWear >= 0.85) {
             return {
                 isValid: false,
-                validationError: `Tyre ${TYRES[currentTyre].name} is too worn (exceeded safety limit >95%) on Lap ${lap}.`,
+                validationError: `Tyre ${TYRES[currentTyre].name} is too worn (exceeded safety limit of 85% wear) on Lap ${lap}.`,
+                totalTime: Infinity,
+                lapTimes,
+                wearProgression,
+                tyreHistory
+            };
+        }
+
+        // Enforce physical stint lap limits based on tyre compound maxLife
+        const remainingLife = Math.max(3, Math.round(TYRES[currentTyre].maxLife * (1 - (lap - currentStintLaps + 1 === startLap ? initialWear : 0))));
+        if (currentStintLaps > remainingLife) {
+            return {
+                isValid: false,
+                validationError: `Tyre ${TYRES[currentTyre].name} stint length on Lap ${lap} exceeded physical tyre life limit (${remainingLife} Laps).`,
                 totalTime: Infinity,
                 lapTimes,
                 wearProgression,
@@ -416,8 +430,14 @@ function optimizeStrategy(track, totalLaps, startLap, initialTyre, initialWear, 
                 wear: tempWear
             });
 
-            // Limit tyre wear to 88% for racing safety limits
-            if (tempWear > 0.88) {
+            // Limit tyre wear to 82% for racing safety limits in search
+            if (tempWear > 0.82) {
+                break;
+            }
+
+            // Limit stint length based on tyre compound maxLife
+            const maxStintLaps = Math.max(3, Math.round(tyreInfo.maxLife * (1 - (stintStartLap === startLap ? initialWear : 0))));
+            if (lapsSimulated >= maxStintLaps) {
                 break;
             }
         }
@@ -427,7 +447,7 @@ function optimizeStrategy(track, totalLaps, startLap, initialTyre, initialWear, 
         // Option A: Carry on this stint until end of race (No more pits)
         if (stintStartLap + lapsSimulated - 1 === totalLaps) {
             const lastLapData = stintData[stintData.length - 1];
-            if (lastLapData.wear < 0.90) {
+            if (lastLapData.wear < 0.85) {
                 search(
                     totalLaps + 1,
                     currentTyre,
