@@ -1,10 +1,9 @@
-# RacePace AI - F1 Pit Strategy Optimizer 🏎️🔮
+# RacePace AI - F1 Pit Strategy Optimizer 🏎️
 
 RacePace AI is an interactive, premium web-based F1 Race Simulation & Pit Strategy Optimizer. Designed with motorsport paddock telemetry aesthetics, this application leverages an AI backtracking search algorithm to compute the mathematically optimal pit stop windows and compound choices for a given race scenario.
 
 ## Live Demo 🌐
-You can host this static site easily on **GitHub Pages**. Once deployed, add your live link here:
-`https://<your-username>.github.io/F1PitStrategyPrediction/`
+`https://arkhabw.github.io/F1PitStrategyPrediction/`
 
 ---
 
@@ -44,16 +43,6 @@ Since this is a fully static client-side web application, it requires no compile
    ```
 2. **Open in browser**:
    Double click the `index.html` file or drag it directly into any modern web browser (Chrome, Edge, Firefox, Safari).
-
----
-
-## How to Deploy to GitHub Pages 🚀
-
-1. Push your code to your GitHub repository `main` branch.
-2. Go to **Settings** > **Pages** inside your GitHub repository.
-3. Under **Build and deployment** > **Source**, choose **Deploy from a branch**.
-4. Under **Branch**, select `main` and `/ (root)`, then click **Save**.
-5. GitHub will generate your live link in about a minute!
 
 ---
 
